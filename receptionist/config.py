@@ -13,6 +13,7 @@ class Settings:
     timezone: str = os.getenv("TIMEZONE", "Europe/London")
     sample_rate: int = 16000  # Whisper expects 16 kHz audio
     whisper_model: str = os.getenv("WHISPER_MODEL", "base.en")
+    tts_voice: str = os.getenv("TTS_VOICE", "models/voices/en_GB-alba-medium.onnx")
 
 
 settings = Settings()
