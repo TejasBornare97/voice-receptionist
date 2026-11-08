@@ -16,6 +16,8 @@ class Settings:
     whisper_model: str = os.getenv("WHISPER_MODEL", "base.en")
     tts_voice: str = os.getenv("TTS_VOICE", "models/voices/en_GB-alba-medium.onnx")
     llm_model: str = os.getenv("LLM_MODEL", "claude-haiku-5-5")
+    google_calendar_id: str = os.getenv("GOOGLE_CALENDAR_ID", "")
+    calendar_backend: str = os.getenv("CALENDAR_BACKEND", "memory")  # "memory" or "google"
 
 
 settings = Settings()

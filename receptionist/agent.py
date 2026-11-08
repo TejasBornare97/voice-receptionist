@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 import anthropic
 
-from receptionist.calendar_client import InMemoryCalendar
+from receptionist.calendar_client import make_calendar
 from receptionist.config import settings
 from receptionist.tools import TOOLS, ToolRunner
 
@@ -60,7 +60,7 @@ class Receptionist:
         self.client = client or anthropic.Anthropic(
             api_key=settings.anthropic_api_key, timeout=15, max_retries=2
         )
-        self.tools = ToolRunner(calendar or InMemoryCalendar())
+        self.tools = ToolRunner(calendar or make_calendar())
         self.history: list[dict] = []
         # Fixed for the whole call: thinking blocks in the history are bound to
         # the exact system prompt they were produced with, so it must not change

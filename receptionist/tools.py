@@ -1,7 +1,7 @@
 import datetime as dt
 import json
 
-from receptionist.calendar_client import TZ, SlotUnavailableError
+from receptionist.calendar_client import TZ, CalendarError, SlotUnavailableError
 
 TOOLS = [
     {
@@ -69,6 +69,13 @@ class ToolRunner:
                 result = {
                     "error": str(exc),
                     "hint": "Check availability again and offer the caller another time.",
+                }
+            except CalendarError as exc:
+                print(f"[calendar] {exc}")
+                result = {
+                    "error": "The diary system isn't responding right now.",
+                    "hint": "Apologise, and offer to take the caller's name and number "
+                    "so the team can call them back to book.",
                 }
             except (ValueError, TypeError) as exc:
                 result = {"error": f"Invalid input: {exc}"}
