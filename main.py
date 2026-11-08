@@ -2,26 +2,18 @@ import argparse
 
 from receptionist.agent import Receptionist
 
-END_PHRASES = ("goodbye", "good bye", "bye bye", "thats all", "thanks bye", "nothing else")
-
-
-def is_goodbye(text: str) -> bool:
-    # Callers and Whisper are inconsistent with apostrophes ("that's" vs "thats")
-    normalised = text.lower().replace("'", "").replace("\u2019", "")
-    return any(phrase in normalised for phrase in END_PHRASES)
-
 
 def run_text() -> None:
     agent = Receptionist()
     print(f"Receptionist: {agent.greeting()}")
 
-    while True:
+    while not agent.call_ended:
         caller = input("You: ").strip()
         if not caller:
             continue
-        print(f"Receptionist: {agent.reply(caller)}")
-        if is_goodbye(caller):
-            break
+        reply = agent.reply(caller)
+        if reply:
+            print(f"Receptionist: {reply}")
 
 
 def run_voice() -> None:
@@ -40,7 +32,7 @@ def run_voice() -> None:
     tts.speak(greeting)
 
     missed = 0
-    while True:
+    while not agent.call_ended:
         print("(listening...)")
         audio = stt.listen()
         if audio is None:
@@ -59,11 +51,9 @@ def run_voice() -> None:
         print(f"Caller: {caller}")
 
         reply = agent.reply(caller)
-        print(f"Receptionist: {reply}")
-        tts.speak(reply)
-
-        if is_goodbye(caller):
-            break
+        if reply:
+            print(f"Receptionist: {reply}")
+            tts.speak(reply)
 
 
 if __name__ == "__main__":

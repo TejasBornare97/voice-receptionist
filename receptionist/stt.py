@@ -15,6 +15,7 @@ BLOCK_SIZE = int(settings.sample_rate * BLOCK_MS / 1000)
 CALL_CONTEXT = (
     "A caller is booking a physiotherapy appointment by phone. "
     "They give their name, a day and time such as half past one, "
+    "quarter past eleven or quarter to one, "
     "and a UK phone number such as 07700 900123."
 )
 
