@@ -10,9 +10,21 @@ from receptionist.config import settings
 BLOCK_MS = 30
 BLOCK_SIZE = int(settings.sample_rate * BLOCK_MS / 1000)
 
+# Primes Whisper with the vocabulary of the call, which improves
+# accuracy on digits, times and booking words
+CALL_CONTEXT = (
+    "A caller is booking a physiotherapy appointment by phone. "
+    "They give their name, a day and time such as half past one, "
+    "and a UK phone number such as 07700 900123."
+)
+
 
 def _rms(block: np.ndarray) -> float:
     return float(np.sqrt(np.mean(block**2)))
+
+
+class MicrophoneError(RuntimeError):
+    pass
 
 
 class SpeechToText:
@@ -65,7 +77,15 @@ class SpeechToText:
             callback=on_audio,
         ):
             while True:
-                block = blocks.get()
+                try:
+                    # Never wait forever: if the device stops sending audio, fail loudly
+                    block = blocks.get(timeout=3)
+                except queue.Empty:
+                    raise MicrophoneError(
+                        "No audio from the microphone for 3 seconds. "
+                        "Check the input device in Windows sound settings."
+                    )
+
                 loud = _rms(block) > self.threshold
 
                 if not speaking:
@@ -89,6 +109,10 @@ class SpeechToText:
 
     def transcribe(self, audio: np.ndarray) -> str:
         segments, _ = self.model.transcribe(
-            audio, language="en", beam_size=1, vad_filter=True
+            audio,
+            language="en",
+            beam_size=1,
+            vad_filter=True,
+            initial_prompt=CALL_CONTEXT,
         )
         return " ".join(segment.text.strip() for segment in segments).strip()

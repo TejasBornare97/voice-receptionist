@@ -3,7 +3,8 @@ from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# override=True: values in .env win over anything set system-wide on this machine
+load_dotenv(override=True)
 
 
 @dataclass(frozen=True)
@@ -14,6 +15,7 @@ class Settings:
     sample_rate: int = 16000  # Whisper expects 16 kHz audio
     whisper_model: str = os.getenv("WHISPER_MODEL", "base.en")
     tts_voice: str = os.getenv("TTS_VOICE", "models/voices/en_GB-alba-medium.onnx")
+    llm_model: str = os.getenv("LLM_MODEL", "claude-haiku-5-5")
 
 
 settings = Settings()
