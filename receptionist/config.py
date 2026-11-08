@@ -12,6 +12,7 @@ class Settings:
     business_name: str = os.getenv("BUSINESS_NAME", "Riverside Physio")
     timezone: str = os.getenv("TIMEZONE", "Europe/London")
     sample_rate: int = 16000  # Whisper expects 16 kHz audio
+    whisper_model: str = os.getenv("WHISPER_MODEL", "base.en")
 
 
 settings = Settings()
