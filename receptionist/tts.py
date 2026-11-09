@@ -49,17 +49,23 @@ class TextToSpeech:
             return np.zeros(0, dtype=np.int16)
         return np.concatenate(chunks)
 
-    def speak(self, text: str, wait: bool = True) -> None:
+    def play(self, text: str) -> float:
+        """Start speaking without waiting. Returns the length of the audio in seconds."""
         audio = self.synthesize(text)
         if audio.size == 0:
-            return
+            return 0.0
         sd.play(audio, self.sample_rate)
-        if wait:
+        return audio.size / self.sample_rate
+
+    def speak(self, text: str) -> None:
+        """Speak and wait until finished."""
+        duration = self.play(text)
+        if duration:
             # sd.wait() can hang on some Bluetooth/USB headsets,
             # so wait for the clip's known length instead
-            time.sleep(audio.size / self.sample_rate + 0.2)
+            time.sleep(duration + 0.2)
             sd.stop()
 
     def stop(self) -> None:
-        """Cut playback immediately. Used later when the caller interrupts."""
+        """Cut playback immediately, e.g. when the caller interrupts."""
         sd.stop()

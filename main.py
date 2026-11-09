@@ -2,6 +2,10 @@ import argparse
 
 from receptionist.agent import Receptionist
 
+# Audio reaches the speaker slightly after playback starts (more on Bluetooth),
+# so keep the stricter barge-in check active a little past the clip's length
+PLAYBACK_TAIL_S = 0.5
+
 
 def run_text() -> None:
     agent = Receptionist()
@@ -24,36 +28,67 @@ def run_voice() -> None:
     tts = TextToSpeech()
     agent = Receptionist()
 
-    print("Calibrating microphone, stay quiet for a second...")
-    stt.calibrate()
+    # Open the mic once for the whole call so the headset settles before she speaks
+    stt.start()
+    try:
+        print("Calibrating microphone, stay quiet for a second...")
+        stt.calibrate()
+        converse(stt, tts, agent)
+    finally:
+        stt.close()
 
-    greeting = agent.greeting()
-    print(f"Receptionist: {greeting}")
-    tts.speak(greeting)
 
+def converse(stt, tts, agent) -> None:
+    say = agent.greeting()
+    print(f"Receptionist: {say}")
     missed = 0
+
     while not agent.call_ended:
+        interrupted = False
+
+        def barge_in() -> None:
+            nonlocal interrupted
+            interrupted = True
+            tts.stop()
+            print("(caller interrupted)")
+
+        # Start speaking, then listen straight away so the caller can cut in
+        playback = tts.play(say) + PLAYBACK_TAIL_S if say else 0.0
         print("(listening...)")
-        audio = stt.listen()
+        audio = stt.listen(playback_s=playback, on_barge_in=barge_in)
+
         if audio is None:
             missed += 1
             if missed >= 2:
                 tts.speak("I'll let you go. Thanks for calling, goodbye.")
-                break
-            tts.speak("Are you still there?")
+                return
+            say = "Are you still there?"
             continue
 
         print("(thinking...)")
         caller = stt.transcribe(audio)
+
         if not caller:
+            if interrupted:
+                # Something cut her off but it wasn't speech: carry on as a person would
+                print("(false interruption, repeating)")
+                continue  # `say` is unchanged, so she says it again
+            say = ""
             continue
+
+        if interrupted:
+            agent.note_interruption()
+
         missed = 0
         print(f"Caller: {caller}")
 
-        reply = agent.reply(caller)
-        if reply:
-            print(f"Receptionist: {reply}")
-            tts.speak(reply)
+        say = agent.reply(caller)
+        if say:
+            print(f"Receptionist: {say}")
+
+    # The goodbye reply that came with end_call hasn't been played yet
+    if say:
+        tts.speak(say)
 
 
 if __name__ == "__main__":

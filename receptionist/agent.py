@@ -19,13 +19,17 @@ How to speak:
 - Say times the way people speak them, like "half past two" or "quarter to one".
 - The caller's words come from speech recognition and may contain mistakes. \
 If something doesn't make sense, ask them to repeat it rather than guessing.
+- Callers sometimes talk over you. If a message says you were interrupted, \
+don't repeat what you were saying. Respond to what the caller just said.
 
 Booking:
 - Appointments are 45 minutes, Monday to Friday. Start times are fixed, so \
 use check_availability to see them. Never offer or agree to a time you haven't checked.
 - If the caller's preferred time isn't free, offer the one or two closest free times.
-- You need the caller's full name and phone number. Read the name back to confirm it, \
-and only ask for spelling if they say it's wrong.
+- If the caller turns down the times you offer, ask whether another day would suit \
+before ending the call.
+- You need the caller's full name and phone number. Confirm the name as a question, \
+like "Is that Sarah Jones?", and wait for a yes. If they say it's wrong, ask them to spell it.
 - UK phone numbers have 11 digits and start with 0. If you have fewer, ask for the rest. \
 Read numbers back in groups, like "oh seven eight six seven, oh five three, nine five two".
 - Before calling book_appointment, read back the day, time, name and number, and wait for a yes.
@@ -43,6 +47,7 @@ FALLBACK_REPLY = (
     "Could you say that again in a moment?"
 )
 EMPTY_REPLY = "Sorry, could you say that again?"
+INTERRUPTED_NOTE = "(The caller interrupted you before you finished speaking.) "
 MAX_TOOL_ROUNDS = 5
 
 
@@ -62,6 +67,7 @@ class Receptionist:
         )
         self.tools = ToolRunner(calendar or make_calendar())
         self.history: list[dict] = []
+        self._interrupted = False
         # Fixed for the whole call: thinking blocks in the history are bound to
         # the exact system prompt they were produced with, so it must not change
         self.system_prompt = build_system_prompt(datetime.now(ZoneInfo(settings.timezone)))
@@ -73,7 +79,15 @@ class Receptionist:
     def greeting(self) -> str:
         return f"Hello, you're through to {settings.business_name}. How can I help you today?"
 
+    def note_interruption(self) -> None:
+        """The caller cut off the last reply, so they didn't hear all of it."""
+        self._interrupted = True
+
     def reply(self, caller_text: str) -> str:
+        if self._interrupted:
+            caller_text = INTERRUPTED_NOTE + caller_text
+            self._interrupted = False
+
         # Remember where this turn started so a failure can be rolled back cleanly
         checkpoint = len(self.history)
         self.history.append({"role": "user", "content": caller_text})
